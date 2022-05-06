@@ -22,17 +22,29 @@ class ExampleNode(BackgroundSequenceMixin, BaseNode, BaseIoTNodeGui):
     def clock(self):
         return SimpleDigitalClock()
 
-    def _background_series_example(self):
-        bgseries = [
-            BackgroundSpec('1.0:0.5:0.5:1.0', duration=10),
-            BackgroundSpec('image.jpg', duration=10),
-            'video.mp4',
-            BackgroundSpec('structured:clock', duration=10),
-            'pdf.pdf',
-            BackgroundSpec(None, duration=10),
-        ]
-        reactor.callLater(5, self._set_bg_sequence, bgseries)
+    _bgseries = [
+        BackgroundSpec('1.0:0.5:0.5:1.0', duration=10),
+        BackgroundSpec('image.jpg', duration=10),
+        'video.mp4',
+        'pdf.pdf',
+        BackgroundSpec('structured:clock', duration=10),
+        BackgroundSpec(None, duration=10),
+    ]
+
+    _bgseries_2 = [
+        BackgroundSpec('1.0:0.5:0.5:1.0', duration=10),
+        'video.mp4',
+        BackgroundSpec('structured:clock', duration=10),
+        BackgroundSpec(None, duration=10),
+    ]
+
+    def _background_sequence_example(self):
+        reactor.callLater(5, self._set_bg_sequence, self._bgseries)
+
+    def _background_sequence_set_example(self):
+        reactor.callLater(5, self.background_sequence_set, self._bgseries)
+        reactor.callLater(42, self.background_sequence_set, self._bgseries_2)
 
     def start(self):
         super(ExampleNode, self).start()
-        self._background_series_example()
+        self._background_sequence_set_example()

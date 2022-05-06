@@ -18,9 +18,7 @@ class BackgroundSequencePersistenceManager(GenericSequencePersistenceManager):
         pass
 
     def _clear_item(self, item):
-        print("  Trying to clear ", item)
         if self._actual.resource_manager.has(item.target):
-            print("    Marking Resource for removal ", item.target)
             r = self._actual.resource_manager.get(item.target)
             r.rtype = None
             r.commit()

@@ -24,6 +24,19 @@ class BackgroundSequenceMixin(BackgroundCoreMixin):
         self._bg_sequence = cycle(value)
         if not self._bg_sequence_active:
             self.bg_step()
+        else:
+            ntargets = []
+            for item in value:
+                if isinstance(item, BackgroundSpec):
+                    ntargets.append(item.target)
+                else:
+                    ntargets.append(item)
+            if self._bg_current in ntargets:
+                curr = None
+                while curr != self._bg_current:
+                    curr = next(self._bg_sequence)
+                    if isinstance(curr, BackgroundSpec):
+                        curr = curr.target
 
     def bg_step(self, *_):
         target = next(self.bg_sequence)
@@ -49,9 +62,9 @@ class BackgroundSequenceMixin(BackgroundCoreMixin):
         for target in targets:
             if not isinstance(target, BackgroundSpec):
                 target = BackgroundSpec(target=target)
-            provider = self._get_provider(target)
+            provider = self._get_provider(target.target)
             if not provider:
-                self.log.warn("Provider not found for background {}. Not Using.".format(target))
+                self.log.warn("Provider not found for background {}. Not Using.".format(target.target))
             else:
                 _targets.append(target)
 
