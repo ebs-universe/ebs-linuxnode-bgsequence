@@ -2,7 +2,7 @@ import setuptools
 
 _requires = [
     'setuptools-scm',
-    'ebs-linuxnode-core>=3.0.3',
+    'ebs-linuxnode-core>=3.0.4',
     'SQLAlchemy',
 ]
 
