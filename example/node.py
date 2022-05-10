@@ -3,7 +3,7 @@
 from twisted.internet import reactor
 from ebs.linuxnode.gui.kivy.core.basenode import BaseIoTNodeGui
 from ebs.linuxnode.gui.kivy.mediaplayer.mixin import MediaPlayerGuiMixin
-from ebs.linuxnode.bgsequence.mixin import BackgroundSequenceMixin
+from ebs.linuxnode.bgsequence.mixin import EffectiveBackgroundMixin
 from kivy_garden.ebs.clocks.digital import SimpleDigitalClock
 from ebs.linuxnode.core.background import BackgroundSpec
 
@@ -14,7 +14,7 @@ except ImportError:
     BaseNode = MediaPlayerGuiMixin
 
 
-class ExampleNode(BackgroundSequenceMixin, BaseNode, BaseIoTNodeGui):
+class ExampleNode(EffectiveBackgroundMixin, BaseNode, BaseIoTNodeGui):
     def _set_bg_sequence(self, targets):
         self.bg_sequence = targets
 
