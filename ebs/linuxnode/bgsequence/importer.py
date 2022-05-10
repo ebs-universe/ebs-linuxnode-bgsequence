@@ -87,7 +87,8 @@ class BackgroundSequenceImporterMixin(BackgroundSequenceMixin, LocalEximMixin):
     def install(self):
         super(BackgroundSequenceImporterMixin, self).install()
         _elements = {
-            'exim_local_background': ElementSpec('exim', 'local_background', ItemSpec(bool, fallback=False)),
+            'exim_local_background': ElementSpec('exim', 'local_background',
+                                                 ItemSpec(bool, read_only=False, fallback=False)),
         }
         for name, spec in _elements.items():
             self.config.register_element(name, spec)
