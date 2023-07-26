@@ -66,8 +66,10 @@ class BackgroundSequenceMixin(BackgroundCoreMixin):
             if not provider:
                 self.log.warn("Provider not found for background {}. Not Using.".format(target.target))
             else:
+                self.log.info(f"Using provider {provider} for background {target.target}")
                 _targets.append(target)
 
+        self.log.info(f"Updating background sequence persistence to {_targets}")
         self._bg_sequence_persistence.update(_targets)
         self.bg_update()
 
