@@ -22,6 +22,11 @@ class BackgroundSequenceMixin(BackgroundCoreMixin):
     @bg_sequence.setter
     def bg_sequence(self, value):
         self._bg_sequence = cycle(value)
+        # We should check that the sequence files are available first. If they aren't, we
+        # enter a complex series of problems which are difficult to get out of.
+        # Specifically, the underlying implementation will fall back to the default
+        # background without clearing _bg_sequence_active, so bg_step doesn't ever get
+        # restarted.
         if not self._bg_sequence_active:
             self.bg_step()
         else:
@@ -37,6 +42,9 @@ class BackgroundSequenceMixin(BackgroundCoreMixin):
                     curr = next(self._bg_sequence)
                     if isinstance(curr, BackgroundSpec):
                         curr = curr.target
+
+    def _bg_signal_fallback(self, with_reset=False):
+        self._bg_sequence_active = False
 
     def bg_step(self, *_):
         target = next(self.bg_sequence)
@@ -66,7 +74,7 @@ class BackgroundSequenceMixin(BackgroundCoreMixin):
             if not provider:
                 self.log.warn("Provider not found for background {}. Not Using.".format(target.target))
             else:
-                self.log.info(f"Using provider {provider} for background {target.target}")
+                self.log.debug(f"Using provider {provider} for background {target.target}")
                 _targets.append(target)
 
         self.log.info(f"Updating background sequence persistence to {_targets}")
@@ -76,8 +84,10 @@ class BackgroundSequenceMixin(BackgroundCoreMixin):
     def bg_update(self):
         sequence_targets = self._bg_sequence_persistence.get()
         if len(sequence_targets) > 1:
+            self.log.debug("Got a sequence of multiple backgrounds")
             self.bg_sequence = sequence_targets
         elif len(sequence_targets) == 1:
+            self.log.debug("Got a sequence of one background")
             bg = sequence_targets[0]
             if bg.duration or bg.callback:
                 bg = BackgroundSpec(target=bg.target,
@@ -87,5 +97,6 @@ class BackgroundSequenceMixin(BackgroundCoreMixin):
             self._bg_sequence_active = False
             self.bg = bg
         else:
+            self.log.debug("Do not have a sequence of backgrounds")
             self._bg_sequence_active = False
             super(BackgroundSequenceMixin, self).bg_update()
