@@ -1,9 +1,13 @@
 
 
+import os
 from itertools import cycle
+from datetime import datetime
 
 from ebs.linuxnode.core.background import BackgroundCoreMixin
 from ebs.linuxnode.core.background import BackgroundSpec
+
+from ebs.linuxnode.mediaplayer.manager import MediaPlayerBusy
 
 from .persistence import BackgroundSequencePersistenceManager
 
@@ -14,6 +18,8 @@ class BackgroundSequenceMixin(BackgroundCoreMixin):
         self._bg_sequence = cycle([])
         self._bg_sequence_persistence = BackgroundSequencePersistenceManager(self)
         self._bg_sequence_active = False
+        self._bg_duration_start = None
+        self._bg_sequence_current = None
 
     @property
     def bg_sequence(self):
@@ -43,10 +49,31 @@ class BackgroundSequenceMixin(BackgroundCoreMixin):
                     if isinstance(curr, BackgroundSpec):
                         curr = curr.target
 
+    def _bg_report_failure(self):
+        if self._bg_sequence_current:
+            current_bg = os.path.basename(self._bg_sequence_current)
+            if self.bg_play_failure_reporter:
+                self.bg_play_failure_reporter(filename=current_bg, event_source='bg_seq',
+                                              timestamp=datetime.utcnow().isoformat())
+
     def _bg_signal_fallback(self, with_reset=False):
-        self._bg_sequence_active = False
+        if self._bg_sequence_active:
+            self._bg_sequence_active = False
+            self._bg_report_failure()
 
     def bg_step(self, *_):
+        if self.bg:
+            current_bg = os.path.basename(self.bg)
+            if self._bg_duration_start:
+                duration = datetime.utcnow() - self._bg_duration_start
+            else:
+                duration = None
+            self.log.debug("Done playing {current} for {duration}",
+                           current=current_bg, duration=duration)
+            if self.bg_play_success_reporter:
+                self.bg_play_success_reporter(filename=current_bg, event_source='bg_seq',
+                                              timestamp=datetime.utcnow().isoformat())
+
         target = next(self.bg_sequence)
         bgcolor, callback, duration = None, None, None
         if isinstance(target, BackgroundSpec):
@@ -60,7 +87,16 @@ class BackgroundSequenceMixin(BackgroundCoreMixin):
         spec = BackgroundSpec(target, bgcolor, callback, duration)
         self.log.debug("BG Sequence Step : {}".format(spec))
         self._bg_sequence_active = True
-        self.bg = spec
+
+        # These two are here only for report generation.
+        self._bg_sequence_current = spec.target
+        self._bg_duration_start = datetime.utcnow()
+        # TODO Schedule screenshot / webcam grab trigger here to take evidence image
+
+        try:
+            self.bg = spec
+        except MediaPlayerBusy:
+            self._bg_report_failure()
 
     def background_sequence_set(self, targets):
         if not targets:
@@ -100,3 +136,18 @@ class BackgroundSequenceMixin(BackgroundCoreMixin):
             self.log.debug("Do not have a sequence of backgrounds")
             self._bg_sequence_active = False
             super(BackgroundSequenceMixin, self).bg_update()
+
+    @property
+    def bg_play_success_reporter(self):
+        if hasattr(self, '_bg_play_success_reporter'):
+            return self._bg_play_success_reporter
+
+    @property
+    def bg_play_failure_reporter(self):
+        if hasattr(self, '_bg_play_failure_reporter'):
+            return self._bg_play_failure_reporter
+
+    @property
+    def bg_play_partial_reporter(self):
+        if hasattr(self, '_bg_play_partial_reporter'):
+            return self._bg_play_partial_reporter
