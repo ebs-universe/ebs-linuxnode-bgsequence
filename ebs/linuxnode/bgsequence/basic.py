@@ -65,14 +65,15 @@ class BackgroundSequenceMixin(BackgroundCoreMixin):
         if self.bg:
             current_bg = os.path.basename(self.bg)
             if self._bg_duration_start:
-                duration = datetime.utcnow() - self._bg_duration_start
+                duration = (datetime.utcnow() - self._bg_duration_start).total_seconds()
             else:
                 duration = None
             self.log.debug("Done playing {current} for {duration}",
                            current=current_bg, duration=duration)
             if self.bg_play_success_reporter:
                 self.bg_play_success_reporter(filename=current_bg, event_source='bg_seq',
-                                              timestamp=datetime.utcnow().isoformat())
+                                              timestamp=datetime.utcnow().isoformat(),
+                                              duration=duration)
 
         target = next(self.bg_sequence)
         bgcolor, callback, duration = None, None, None
